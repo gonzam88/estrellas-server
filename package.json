@@ -1,0 +1,19 @@
+{
+  "name": "estrellas-socketserver",
+  "version": "1.0.0",
+  "description": "Socket Server for Estrellas app",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "async-limiter": "^1.0.0",
+    "ws": "^6.0.0"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.0",
+    "utf-8-validate": "^5.0.1"
+  }
+}
