@@ -1,8 +1,17 @@
-const WebSocket = require('ws');
+// const WebSocket = require('ws');
+const express = require('express');
+const SocketServer = require('ws').Server;
+const path = require('path');
 
-const wss = new WebSocket.Server({ port: 8000 }, () => {
-  console.log('listening on 8000');
-});
+const PORT = process.env.PORT || 3000;
+const INDEX = path.join(__dirname, 'index.html');
+
+const server = express()
+  .use((req, res) => res.sendFile(INDEX) )
+  .listen(PORT, () => console.log(`Listening on ${ PORT }`));
+
+const wss = new SocketServer({ server });
+
 
 wss.getUniqueID = function () {
     function s4() {
@@ -123,21 +132,15 @@ wss.on('connection', function connection(ws) {
             data.action = "roomEnded";
             ws.friend.send( JSON.stringify(data) );
         }
-
-        console.log("Conexion cerrada: " + ws.nickname);
         console.log();
-
-
+        console.log("Conexion cerrada: " + ws.nickname);
 
         wss.MatchAvailablePlayers();
     });
-
 });
 
 
-
-
-
+// Ping pong
 const interval = setInterval(function ping() {
   wss.clients.forEach(function each(ws) {
     if (ws.isAlive === false) return ws.terminate();
