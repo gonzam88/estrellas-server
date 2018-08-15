@@ -13,6 +13,16 @@ const server = express()
 const wss = new SocketServer({ server });
 
 
+
+
+
+// const wss = new (require('ws')).Server({port: (process.env.PORT || port)}),
+
+
+// const wss = new WebSocket.Server({ port: 8000 }, () => {
+//   console.log('listening on 8000');
+// });
+
 wss.getUniqueID = function () {
     function s4() {
         return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -53,7 +63,41 @@ wss.MatchAvailablePlayers = function(){
     console.log("Players en la Queue: " + playersQueue.length);
 }
 
+wss.UpdatePaneles = function(toOneClient = ""){
+    var data = {
+        action: "serverState",
+        queueLength: playersQueue.length,
+        playersInQueue: [],
+        playersInRooms: []
+    }
+    var playersYaContados = [];
+
+    wss.clients.forEach(function each(client) {
+        if(!client.isPanel) {
+            if(!playersYaContados.includes(client.id)) {
+                if(client.isQueue){
+                    data.playersInQueue.push( client.nickname );
+                }else{
+                    data.playersInRooms.push( client.nickname + " con " + client.friend.nickname );
+                    playersYaContados.push(client.friend.id);
+                }
+            }
+        }
+    });
+    if(toOneClient == ""){
+        for(let i =0; i < panelesClients.length; i++){
+            panelesClients[i].send(JSON.stringify(data));
+        }
+    }else{
+        console.log();
+        console.log("Panel data enviado a " + toOneClient.nickname);
+        toOneClient.send(JSON.stringify(data))
+    }
+
+}
+
 var playersQueue = [];
+var panelesClients = [];
 function noop() {}
 
 function heartbeat() {
@@ -64,8 +108,6 @@ wss.on('connection', function connection(ws) {
     ws.id = wss.getUniqueID();
     ws.isAlive = true;
     ws.friend = "";
-    ws.isQueue = true;
-    playersQueue.push(ws);
 
     ws.on('pong', heartbeat);
 
@@ -92,9 +134,21 @@ wss.on('connection', function connection(ws) {
                 case "login":
                     ws.nickname = data.nickname;
                     ws.role = data.role;
+                    if(ws.role == "panel"){
+                        panelesClients.push(ws);
+                        ws.isPanel = true;
+                    }else {
+                        ws.isQueue = true;
+                        playersQueue.push(ws);
+                    }
                     console.log("Usr Login: " + ws.nickname);
 
                     wss.MatchAvailablePlayers();
+                    wss.UpdatePaneles();
+                    break;
+
+                case "refreshPanel":
+                    wss.UpdatePaneles(ws);
                     break;
 
             }
@@ -115,7 +169,14 @@ wss.on('connection', function connection(ws) {
 
 
     ws.on('close', function connection(client) {
-        if(ws.isQueue){
+        if(ws.role == "panel"){
+            for(let i=0; i < panelesClients.length; i++){
+                if(ws.id == panelesClients[i].id){
+                    panelesClients.splice(i, 1);
+                }
+            }
+
+        }else if(ws.isQueue){
             // Me fijo si este jugador sigue en la queue;
             for(let i=0; i < playersQueue.length; i++){
                 if(ws.id == playersQueue[i].id){
@@ -136,8 +197,10 @@ wss.on('connection', function connection(ws) {
         console.log("Conexion cerrada: " + ws.nickname);
 
         wss.MatchAvailablePlayers();
+        wss.UpdatePaneles();
     });
 });
+
 
 
 // Ping pong

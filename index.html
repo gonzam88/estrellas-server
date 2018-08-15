@@ -1,0 +1,84 @@
+<html>
+    <head>
+        <title>Panel Estrellas</title>
+    </head>
+    <body>
+
+        <h1>Estrellas Panel</h1>
+        <button onclick="RefreshData()">Refresh</button>
+
+        <h3>Queue</h3>
+        <div>
+          Jugadores en fila: <span id="queueLength"></span>
+        </div></br>
+        <div id="playersInQueue">
+
+        </div>
+
+        <h3>Rooms</h3>
+        <div id="playersInRooms">
+
+        </div>
+
+
+
+        <script>
+            var HOST = location.origin.replace(/^http/, 'ws')
+            var ws = new WebSocket(HOST);
+
+            var elqueueLength = document.getElementById('queueLength');
+            var elplayersInQueue = document.getElementById('playersInQueue');
+            var elplayersInRooms = document.getElementById('playersInRooms');
+
+            let logInData = {
+                action: "login",
+                nickname: "Panel Web",
+                role: "panel"
+            };
+            logInData = JSON.stringify(logInData);
+            console.log(logInData);
+
+            function RefreshData(){
+                let data = {
+                    action: "refreshPanel"
+                }
+                data = JSON.stringify(data);
+                ws.send(data);
+            }
+
+            // Connection opened
+            ws.addEventListener('open', function (event) {
+                ws.send(logInData);
+            });
+
+
+            // Listen for messages
+            ws.addEventListener('message', function (event) {
+                console.log('Message from server ', event.data);
+            });
+
+            ws.onmessage = function (event) {
+                // el.innerHTML = 'Server time: ' + event.data;
+                var data = JSON.parse(event.data)
+                if(data.action == "serverState"){
+                    console.log(data);
+                    elqueueLength.innerHTML = data.queueLength;
+
+                    var playersInQueue = "";
+                    for(let i = 0; i < data.playersInQueue.length; i++){
+                        playersInQueue += data.playersInQueue[i] + "</br>";
+                    }
+                    elplayersInQueue.innerHTML = playersInQueue;
+
+                    var playersInRooms = "";
+                    for(let i = 0; i < data.playersInRooms.length; i++){
+                        playersInRooms += data.playersInRooms[i] + "</br>";
+                    }
+                    elplayersInRooms.innerHTML = playersInRooms;
+                }
+
+
+            };
+        </script>
+    </body>
+</html>
