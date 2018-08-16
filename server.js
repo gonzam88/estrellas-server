@@ -13,16 +13,6 @@ const server = express()
 const wss = new SocketServer({ server });
 
 
-
-
-
-// const wss = new (require('ws')).Server({port: (process.env.PORT || port)}),
-
-
-// const wss = new WebSocket.Server({ port: 8000 }, () => {
-//   console.log('listening on 8000');
-// });
-
 wss.getUniqueID = function () {
     function s4() {
         return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
@@ -76,9 +66,9 @@ wss.UpdatePaneles = function(toOneClient = ""){
         if(!client.isPanel) {
             if(!playersYaContados.includes(client.id)) {
                 if(client.isQueue){
-                    data.playersInQueue.push( client.nickname );
+                    data.playersInQueue.push( client.nickname + "("+ client.ip +")");
                 }else{
-                    data.playersInRooms.push( client.nickname + " con " + client.friend.nickname );
+                    data.playersInRooms.push( client.nickname  + "("+ client.ip +")" + " con " + client.friend.nickname  + "("+ client.ip +")" );
                     playersYaContados.push(client.friend.id);
                 }
             }
@@ -108,6 +98,7 @@ wss.on('connection', function connection(ws) {
     ws.id = wss.getUniqueID();
     ws.isAlive = true;
     ws.friend = "";
+    ws.ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 
     ws.on('pong', heartbeat);
 
@@ -158,13 +149,6 @@ wss.on('connection', function connection(ws) {
             // Mensaje directo
             // console.log("Msj Directo: " + message);
         }
-
-        // for (var i = 0; i < clients.length; i++) {
-        //
-        //   if(clients[i].readyState === 1){
-        //     clients[i].send(message);
-        //   }
-        // }
     });
 
 
@@ -175,7 +159,6 @@ wss.on('connection', function connection(ws) {
                     panelesClients.splice(i, 1);
                 }
             }
-
         }else if(ws.isQueue){
             // Me fijo si este jugador sigue en la queue;
             for(let i=0; i < playersQueue.length; i++){
