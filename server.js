@@ -94,11 +94,11 @@ function heartbeat() {
   this.isAlive = true;
 }
 
-wss.on('connection', function connection(ws) {
+wss.on('connection', function connection(ws, req) {
     ws.id = wss.getUniqueID();
     ws.isAlive = true;
     ws.friend = "";
-    ws.ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    ws.ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0] || req.connection.remoteAddress;
 
     ws.on('pong', heartbeat);
 
